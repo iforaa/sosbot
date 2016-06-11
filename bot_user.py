@@ -7,6 +7,7 @@ NAMES = "_names"
 STATE = "_state"
 SOSS = "_soss"
 ADVICES = "_advices"
+SCHEDULE = "_schedule"
 
 red = redis.StrictRedis(host='localhost', port=6379, db=1)
 
@@ -36,28 +37,32 @@ def set_state(chat_id, state):
 def new_user(chat_id):
     chat_id = str(chat_id)
     red.set(chat_id + "_chat_id", chat_id)
-    red.delete(chat_id + FILTERS)
-    red.lpush(chat_id + FILTERS, randint(0, 1000))
-    set_current_filter(chat_id, 0)
-    # red.set(chat_id + CURRENT_FILTER, 0)
 
-    red.set(chat_id + STATE, 1)
-    red.set(chat_id + SETT_ACTIVE, "false")
 
-    save_filter_settings(chat_id, current_filter(chat_id))
+def set_schedule(chat_id, seconds):
+    chat_id = str(chat_id)
+    red.set(chat_id + SCHEDULE, seconds)
+
+
+def get_schedule(chat_id):
+    chat_id = str(chat_id)
+    return red.get(chat_id + SCHEDULE)
 
 
 def add_name(chat_id, name):
-    red.rpush(NAMES, name)
+    chat_id = str(chat_id)
+    red.rpush(chat_id + NAMES, name)
 
 
 def get_names_len(chat_id):
-    names = red.lrange(NAMES, 0, -1)
+    chat_id = str(chat_id)
+    names = red.lrange(chat_id + NAMES, 0, -1)
     return len(names)
 
 
 def show_names(chat_id):
-    names = red.lrange(NAMES, 0, -1)
+    chat_id = str(chat_id)
+    names = red.lrange(chat_id + NAMES, 0, -1)
     text = ""
     i = 1
     for word in phrases:
@@ -68,7 +73,7 @@ def show_names(chat_id):
 
 
 def get_random_name():
-    phrases = red.lrange(NAMES, 0, -1)
+    phrases = red.lrange(chat_id + NAMES, 0, -1)
     if len(phrases) > 0:
         return phrases[random.randint(0, len(phrases) - 1)]
     else:
@@ -128,4 +133,4 @@ def show_all_advice_phrases():
 
 def remove_advice_phrase(num):
     element = red.lindex(ADVICES, num - 1)
-    red.lrem(PHRASES, -1, element)
+    red.lrem(ADVICES, -1, element)

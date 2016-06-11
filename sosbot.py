@@ -4,7 +4,7 @@
 from telegram import ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from dateutil import parser
-
+from telegram.ext.dispatcher import run_async
 
 import logging
 import bot_user
@@ -52,9 +52,6 @@ def state_machine(bot, update):
     text = update.message.text
     chat_state = bot_user.get_state(chat_id)
 
-    def alarm(bot):
-        bot.sendMessage(chat_id, text=bot_user.get_random_sos())
-
     if chat_state == AWAITING_NAME:
         bot_user.add_name(chat_id, text)
 
@@ -68,8 +65,10 @@ def state_machine(bot, update):
 
     if chat_state == AWAITING_TYPE_USE:
         if text == REPLY_MARKUP_SOS:
+            current_date = datetime.datetime.now()
+            current_in_seconds = time.mktime(current_date.timetuple())
 
-            job_queue.put(alarm, 300, repeat=False)
+            bot_user.set_schedule(chat_id, current_in_seconds + 300)
             bot.sendMessage(chat_id, text=BOT_SOS_EXAMPLE)
 
         elif text == REPLY_MARKUP_ADVICE or text == REPLY_MARKUP_ONE_MORE_ADVICE:
@@ -81,12 +80,10 @@ def state_machine(bot, update):
                 reply_markup=reply_markup)
 
         else:
-
-            current_date = datetime.datetime.now()
-            current_in_seconds = time.mktime(current_date.timetuple())
-
             schedule_date = parser.parse(text)
             schedule_in_seconds = time.mktime(schedule_date.timetuple())
+            current_date = datetime.datetime.now()
+            current_in_seconds = time.mktime(current_date.timetuple())
 
             due = schedule_in_seconds - current_in_seconds
 
@@ -94,7 +91,7 @@ def state_machine(bot, update):
                 bot.sendMessage(update.message.chat_id,
                                 text="Это уже прошлое, бро")
             else:
-                job_queue.put(alarm, due, repeat=False)
+                bot_user.set_schedule(chat_id, schedule_in_seconds)
                 bot.sendMessage(chat_id, text='Таймер обновлен')
 
 
@@ -134,16 +131,21 @@ def showsos(bot, update):
     bot.sendMessage(update.message.chat_id, text=bot_user.show_all_sos_phrases())
 
 
-def sos(bot, update, args):
+def restart(bot, update):
+    job_queue.put(alarm, 10, repeat=True)
 
 
-    if len(args) == 0:
-        bot.sendMessage(update.message.chat_id, text=bot_user.get_random_sos())
-    else:
-        chat_id = update.message.chat_id
-        text = args[0]
-        chat_state = bot_user.get_state(chat_id)
+@run_async
+def alarm(bot):
+    current_date = datetime.datetime.now()
+    current_in_seconds = time.mktime(current_date.timetuple())
 
+    for user in bot_user.all_users():
+        schedule = int(bot_user.get_schedules(user))
+        if schedule < current_in_seconds:
+            if schedule != 0:
+                bot.sendMessage(user, text=bot_user.get_random_name(user) + ", " + bot_user.get_random_sos())
+                bot_user.set_schedule(user, 0)
 
 
 def error(bot, update, error):
@@ -166,7 +168,7 @@ def main():
     dp.add_handler(CommandHandler("addadvice", addadvice, removesos, pass_args=True))
     dp.add_handler(CommandHandler("showadvice", showadvice))
     dp.add_handler(CommandHandler("removeadvice", removeadvice, pass_args=True))
-
+    dp.add_handler(CommandHandler("restart", restart))
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", start))
