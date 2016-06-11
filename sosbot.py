@@ -44,7 +44,7 @@ def start(bot, update):
         bot.sendMessage(update.message.chat_id,
                         text="Здравствуйте " + bot_user.get_random_name(),
                         reply_markup=reply_markup)
-        bot_user.set_state(update.message.chat_id, AWAITING_TYPE_USE)
+        bot_user.set_state(update.message.chat_id, AWAITING_NAME)
 
 
 def state_machine(bot, update):
@@ -67,7 +67,6 @@ def state_machine(bot, update):
                     text="Еще одно")
 
     if chat_state == AWAITING_TYPE_USE:
-
         if text == REPLY_MARKUP_SOS:
 
             job_queue.put(alarm, 300, repeat=False)
@@ -82,7 +81,6 @@ def state_machine(bot, update):
                 reply_markup=reply_markup)
 
         else:
-
 
             current_date = datetime.datetime.now()
             current_in_seconds = time.mktime(current_date.timetuple())
@@ -101,6 +99,21 @@ def state_machine(bot, update):
 
 
 
+def addadvice(bot, update, args):
+    text = ""
+    for arg in args:
+        text += arg
+        text += " "
+
+    bot_user.add_advice_phrase(text)
+
+
+def removeadvice(bot, update, args):
+    bot_user.remove_advice_phrase(int(args[0]))
+
+
+def showadvice(bot, update):
+    bot.sendMessage(update.message.chat_id, text=bot_user.show_all_advice_phrases())
 
 
 
@@ -147,14 +160,17 @@ def main():
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("addsos", addsos, removesos, pass_args = True))
+    dp.add_handler(CommandHandler("addsos", addsos, removesos, pass_args=True))
     dp.add_handler(CommandHandler("showsos", showsos))
-    dp.add_handler(CommandHandler("removesos", removesos, pass_args = True))
+    dp.add_handler(CommandHandler("removesos", removesos, pass_args=True))
+    dp.add_handler(CommandHandler("addadvice", addadvice, removesos, pass_args=True))
+    dp.add_handler(CommandHandler("showadvice", showadvice))
+    dp.add_handler(CommandHandler("removeadvice", removeadvice, pass_args=True))
 
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", start))
-    dp.add_handler(CommandHandler("sos", sos, pass_args = True))
+    # dp.add_handler(CommandHandler("sos", sos, pass_args = True))
     dp.add_handler(MessageHandler([Filters.text], state_machine))
 
     # log all errors
