@@ -140,7 +140,7 @@ def error(bot, update, error):
 def main():
     global job_queue
 
-    updater = Updater("201502225:AAFNP1mnUjurL8JgwutN-nLHJJUma6IBUbI")
+    updater = Updater("211360109:AAFRKMTfPAkKlDzlf31zvZQ79quEqtTe_nQ")
     job_queue = updater.job_queue
 
     # Get the dispatcher to register handlers
