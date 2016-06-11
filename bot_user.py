@@ -25,7 +25,7 @@ def all_users():
 
 def get_state(chat_id):
     chat_id = str(chat_id)
-    return int(red.get(chat_id + STATE))
+    return red.get(chat_id + STATE)
 
 
 def set_state(chat_id, state):
