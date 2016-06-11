@@ -54,7 +54,7 @@ def state_machine(bot, update):
 
     def alarm(bot):
         bot.sendMessage(chat_id, text=bot_user.get_random_sos())
-        
+
     if chat_state == AWAITING_NAME:
         bot_user.add_name(chat_id, text)
 
@@ -77,7 +77,6 @@ def state_machine(bot, update):
             reply_markup = ReplyKeyboardMarkup([[REPLY_MARKUP_SOS, REPLY_MARKUP_ONE_MORE_ADVICE]],
                                                one_time_keyboard=False,
                                                resize_keyboard=True)
-            bot_user.set_state(chat_id, ADVICE_STATE)
             bot.sendMessage(update.message.chat_id,
                 text=bot_user.get_random_advice(),
                 reply_markup=reply_markup)
