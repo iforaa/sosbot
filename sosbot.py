@@ -37,9 +37,7 @@ def start(bot, update):
     bot_user.new_user(update.message.chat_id)
 
     if bot_user.get_names_len(update.message.chat_id) <= 3:
-        # reply_markup = ReplyKeyboardMarkup([[REPLY_MARKUP_SOS, REPLY_MARKUP_ADVICE]],
-        #                                    one_time_keyboard=False,
-        #                                    resize_keyboard=True)
+
         bot.sendMessage(update.message.chat_id,
                         text=BOT_WELCOME)
         bot_user.set_state(update.message.chat_id, AWAITING_NAME)
@@ -61,10 +59,15 @@ def state_machine(bot, update):
     if chat_state == AWAITING_NAME:
         bot_user.add_name(chat_id, text)
 
+
         if bot_user.get_names_len(chat_id) >= 3:
+            reply_markup = ReplyKeyboardMarkup([[REPLY_MARKUP_SOS, REPLY_MARKUP_ADVICE]],
+                                               one_time_keyboard=False,
+                                               resize_keyboard=True)
             bot_user.set_state(chat_id, AWAITING_TYPE_USE)
             bot.sendMessage(update.message.chat_id,
-                        text=BOT_TEXT_ME_SOS)
+                        text=BOT_TEXT_ME_SOS,
+                        reply_markup=reply_markup )
         else:
             bot.sendMessage(update.message.chat_id,
                     text="Отлично " + bot_user.get_random_name(chat_id) + ". Введи еще " + str(3 - bot_user.get_names_len(chat_id)))
