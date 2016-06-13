@@ -23,7 +23,7 @@ AWAITING_NAME, AWAITING_TYPE_USE, SOS_STATE, ADVICE_STATE = range(4)
 
 BOT_WELCOME = u"Привет! Я Миша. Моя задача-помочь тебе свалить со свидания, если оно стало скучным (SOS), или дать тебе полезный совет (Совет). Да. кстати, как я могу к тебе обращаться? Напиши 3 варианта своего имени в разных сообщениях"
 BOT_TEXT_ME_SOS = u"Думаешь, она окажется не в твоем вкусе, и вы не найдете общих тем для разговора? Или что-то уже пошло не так? В любом случае, я готов тебя вытащить из этой передряги, бро! Просто положи телефон и я начну действовать уже через 5 минут. Или введи нужное время сам."
-BOT_SOS_EXAMPLE = 'Таймер установлен. Сообщение будет отправлено через 5 мин. Можете указать точное время. Например: 21:45'
+BOT_SOS_EXAMPLE = u"Таймер установлен. Сообщение будет отправлено через 5 мин. Можете указать точное время. Например: 21:45"
 
 REPLY_MARKUP_SOS = u"SOS"
 REPLY_MARKUP_ADVICE = u"Совет дня"
@@ -31,18 +31,24 @@ REPLY_MARKUP_ONE_MORE_ADVICE = u"Еще совет"
 
 
 def start(bot, update):
-    reply_markup = ReplyKeyboardMarkup([[REPLY_MARKUP_SOS, REPLY_MARKUP_ADVICE]],
-                                       one_time_keyboard=False,
-                                       resize_keyboard=True)
 
-    if bot_user.get_names_len(update.message.chat_id) < 3:
+
+    bot_user.delete_user(update.message.chat_id)
+    bot_user.new_user(update.message.chat_id)
+
+    if bot_user.get_names_len(update.message.chat_id) <= 3:
+        # reply_markup = ReplyKeyboardMarkup([[REPLY_MARKUP_SOS, REPLY_MARKUP_ADVICE]],
+        #                                    one_time_keyboard=False,
+        #                                    resize_keyboard=True)
         bot.sendMessage(update.message.chat_id,
-                        text=BOT_WELCOME,
-                        reply_markup=reply_markup)
+                        text=BOT_WELCOME)
         bot_user.set_state(update.message.chat_id, AWAITING_NAME)
     else:
+        reply_markup = ReplyKeyboardMarkup([[REPLY_MARKUP_SOS, REPLY_MARKUP_ADVICE]],
+                                           one_time_keyboard=False,
+                                           resize_keyboard=True)
         bot.sendMessage(update.message.chat_id,
-                        text="Здравствуйте " + bot_user.get_random_name(),
+                        text="Здравствуйте " + bot_user.get_random_name(update.message.chat_id),
                         reply_markup=reply_markup)
         bot_user.set_state(update.message.chat_id, AWAITING_NAME)
 
@@ -61,7 +67,7 @@ def state_machine(bot, update):
                         text=BOT_TEXT_ME_SOS)
         else:
             bot.sendMessage(update.message.chat_id,
-                    text="Еще одно")
+                    text="Отлично " + bot_user.get_random_name(chat_id) + ". Введи еще " + str(3 - bot_user.get_names_len(chat_id)))
 
     if chat_state == AWAITING_TYPE_USE:
         if text == REPLY_MARKUP_SOS:
@@ -132,20 +138,32 @@ def showsos(bot, update):
 
 
 def restart(bot, update):
-    job_queue.put(alarm, 10, repeat=True)
+    job_queue.put(alarm, 5, repeat=True)
+
+
+
+def clear(bot, update):
+    all_user = bot_user.all_users()
+    if all_user is not False:
+        for user in bot_user.all_users():
+            print(user)
+            bot.sendMessage(user,  text="user " + str(user) + " deleted")
+            bot_user.delete_user(user)
+
+
 
 
 @run_async
 def alarm(bot):
     current_date = datetime.datetime.now()
     current_in_seconds = time.mktime(current_date.timetuple())
-
     for user in bot_user.all_users():
-        schedule = int(bot_user.get_schedules(user))
-        if schedule < current_in_seconds:
-            if schedule != 0:
-                bot.sendMessage(user, text=bot_user.get_random_name(user) + ", " + bot_user.get_random_sos())
-                bot_user.set_schedule(user, 0)
+        if user is not False:
+            schedule = float(bot_user.get_schedule(user))
+            if schedule < current_in_seconds:
+                if schedule != 0:
+                    bot.sendMessage(user, text=bot_user.get_random_name(user) + ", " + bot_user.get_random_sos())
+                    bot_user.set_schedule(user, 0)
 
 
 def error(bot, update, error):
@@ -169,7 +187,7 @@ def main():
     dp.add_handler(CommandHandler("showadvice", showadvice))
     dp.add_handler(CommandHandler("removeadvice", removeadvice, pass_args=True))
     dp.add_handler(CommandHandler("restart", restart))
-
+    dp.add_handler(CommandHandler("clear", clear))
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", start))
     # dp.add_handler(CommandHandler("sos", sos, pass_args = True))

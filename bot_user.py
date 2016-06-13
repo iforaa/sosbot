@@ -21,7 +21,15 @@ def is_user_new(chat_id):
 
 
 def all_users():
-    return red.mget(red.keys(pattern="*_chat_id"))
+    if len(red.keys(pattern="*_chat_id")) > 0:
+        return red.mget(red.keys(pattern="*_chat_id"))
+    return False
+
+
+def delete_user(chat_id):
+    chat_id = str(chat_id)
+    red.delete(chat_id + "_chat_id")
+    red.delete(chat_id + NAMES)
 
 
 def get_state(chat_id):
@@ -72,7 +80,8 @@ def show_names(chat_id):
     return text
 
 
-def get_random_name():
+def get_random_name(chat_id):
+    chat_id = str(chat_id)
     phrases = red.lrange(chat_id + NAMES, 0, -1)
     if len(phrases) > 0:
         return phrases[random.randint(0, len(phrases) - 1)]
