@@ -114,7 +114,7 @@ def show_all_sos_phrases():
 
 def remove_sos_phrase(num):
     element = red.lindex(SOSS, num - 1)
-    red.lrem(PHRASES, -1, element)
+    red.lrem(SOSS, -1, element)
 
 
 def get_random_advice():
